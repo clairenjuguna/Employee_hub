@@ -1,0 +1,75 @@
+/* Chat styles */
+.message {
+    margin-bottom: 1rem;
+}
+
+.message-content {
+    max-width: 80%;
+    padding: 0.75rem;
+    border-radius: 1rem;
+    position: relative;
+}
+
+.message.sent .message-content {
+    background-color: #007bff;
+    color: white;
+    margin-left: auto;
+    border-bottom-right-radius: 0.25rem;
+}
+
+.message.received .message-content {
+    background-color: #f8f9fa;
+    margin-right: auto;
+    border-bottom-left-radius: 0.25rem;
+}
+
+.message small {
+    font-size: 0.75rem;
+    opacity: 0.8;
+}
+
+.conversation-list {
+    height: calc(100vh - 200px);
+    overflow-y: auto;
+}
+
+.message-input {
+    border-top: 1px solid #dee2e6;
+    padding: 1rem;
+    background-color: white;
+}
+
+.unread-badge {
+    background-color: #dc3545;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 50%;
+    font-size: 0.75rem;
+}
+
+/* Animations */
+.message {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .message-content {
+        max-width: 90%;
+    }
+    
+    .conversation-list {
+        height: calc(100vh - 300px);
+    }
+} 

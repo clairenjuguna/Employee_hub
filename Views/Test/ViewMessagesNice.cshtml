@@ -1,0 +1,153 @@
+@model IEnumerable<Employee_hub_new.Models.ViewModels.MessageViewModel>
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Conversations</h5>
+                </div>
+                <div class="list-group list-group-flush" id="conversationsList">
+                    @foreach (var user in ViewBag.Users)
+                    {
+                        <a href="#" class="list-group-item list-group-item-action" 
+                           data-user-id="@user.Id" 
+                           data-user-email="@user.Email"
+                           onclick="loadConversation('@user.Id', '@user.Email')">
+                            @user.Email
+                            <span class="badge bg-primary float-end unread-count d-none"></span>
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0" id="currentConversation">Select a conversation</h5>
+                </div>
+                <div class="card-body" style="height: 400px; overflow-y: auto;">
+                    <div id="messagesList"></div>
+                </div>
+                <div class="card-footer">
+                    <form id="messageForm" class="d-none">
+                        <div class="input-group">
+                            <input type="text" id="messageInput" class="form-control" placeholder="Type your message...">
+                            <button type="submit" class="btn btn-primary">Send</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/lib/microsoft/signalr/dist/browser/signalr.js"></script>
+    <script>
+        let connection = new signalR.HubConnectionBuilder()
+            .withUrl("/chatHub")
+            .build();
+
+        let currentReceiverId = null;
+
+        async function start() {
+            try {
+                await connection.start();
+                console.log("SignalR Connected.");
+            } catch (err) {
+                console.log(err);
+                setTimeout(start, 5000);
+            }
+        }
+
+        connection.onclose(start);
+
+        // Start the connection
+        start();
+
+        // Handle receiving messages
+        connection.on("ReceiveMessage", (senderId, content, timestamp) => {
+            if (senderId === currentReceiverId) {
+                appendMessage(content, timestamp, false);
+            } else {
+                updateUnreadCount(senderId);
+            }
+        });
+
+        // Handle message read receipts
+        connection.on("MessageRead", (messageId) => {
+            // Update UI to show message was read
+            $(`#message-${messageId}`).addClass("read");
+        });
+
+        function loadConversation(userId, userEmail) {
+            currentReceiverId = userId;
+            $("#currentConversation").text(`Chat with ${userEmail}`);
+            $("#messageForm").removeClass("d-none");
+            $("#messagesList").empty();
+
+            // Load previous messages
+            $.get(`/Test/GetConversation/${userId}`, function(messages) {
+                messages.forEach(msg => {
+                    appendMessage(msg.content, msg.timestamp, msg.senderId === "@User.Identity.Name");
+                });
+            });
+        }
+
+        function appendMessage(content, timestamp, isSent) {
+            const messageDiv = document.createElement("div");
+            messageDiv.className = `message ${isSent ? 'sent' : 'received'} mb-2`;
+            messageDiv.innerHTML = `
+                <div class="message-content ${isSent ? 'bg-primary text-white' : 'bg-light'} p-2 rounded">
+                    ${content}
+                    <small class="d-block text-${isSent ? 'light' : 'muted'}">${new Date(timestamp).toLocaleTimeString()}</small>
+                </div>
+            `;
+            $("#messagesList").append(messageDiv);
+            messageDiv.scrollIntoView({ behavior: "smooth" });
+        }
+
+        function updateUnreadCount(senderId) {
+            const userItem = $(`.list-group-item[data-user-id="${senderId}"]`);
+            const badge = userItem.find(".unread-count");
+            const count = parseInt(badge.text()) || 0;
+            badge.text(count + 1).removeClass("d-none");
+        }
+
+        $("#messageForm").on("submit", async function(e) {
+            e.preventDefault();
+            const content = $("#messageInput").val().trim();
+            if (content && currentReceiverId) {
+                try {
+                    await connection.invoke("SendMessage", currentReceiverId, content);
+                    $("#messageInput").val("");
+                    appendMessage(content, new Date(), true);
+                } catch (err) {
+                    console.error(err);
+                }
+            }
+        });
+    </script>
+
+    <style>
+        .message {
+            max-width: 75%;
+            margin: 8px 0;
+        }
+
+        .message.sent {
+            margin-left: auto;
+        }
+
+        .message.received {
+            margin-right: auto;
+        }
+
+        .message-content {
+            display: inline-block;
+            padding: 8px 12px;
+            border-radius: 15px;
+        }
+    </style>
+} 

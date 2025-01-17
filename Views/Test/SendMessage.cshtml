@@ -1,0 +1,24 @@
+@{
+    ViewData["Title"] = "Send Message";
+}
+
+<div class="container mt-4">
+    <h2>Send New Message</h2>
+    <form asp-action="SendMessage" method="post">
+        <div class="mb-3">
+            <label class="form-label">To:</label>
+            <select name="receiverId" class="form-select">
+                @foreach (var user in ViewBag.Users)
+                {
+                    <option value="@user.Id">@user.Email</option>
+                }
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Message:</label>
+            <textarea name="content" class="form-control" rows="4" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Send Message</button>
+        <a asp-action="ViewMessagesNice" class="btn btn-secondary">Back to Messages</a>
+    </form>
+</div> 
